@@ -26,5 +26,6 @@ jobs:
         cache: 'npm'
     - run: npm ci
     - run: |
-          echo "Secret value: ${{ secrets.PROD_ENV_FILE }}"
+          touch .env
+          echo ${{ secrets.PROD_ENV_FILE }}" > .env
 
