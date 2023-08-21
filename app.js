@@ -34,7 +34,11 @@ const shop = require("./controllers/shop");
 const product = require("./controllers/product");
 const order = require("./controllers/order");
 
-
+app.use("/api/products", (req, res) => {
+  return res.status(200).json({
+    message: 'This is new feature change, a new route for products'
+  })
+});
 app.use("/api/v2/user", user);
 app.use("/api/v2/order", order);
 app.use("/api/v2/shop", shop);
