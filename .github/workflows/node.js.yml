@@ -25,7 +25,9 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
     - run: npm ci
-   - run: |
+   steps:
+  - name: Create .env file
+    run: |
       touch config/.env
       echo "${{ secrets.PROD_ENV_FILE }}" > config/.env
 
