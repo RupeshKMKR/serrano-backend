@@ -18,11 +18,7 @@ if (process.env.NODE_ENV !== "PRODUCTION") {
 // connect db
 connectDatabase();
 
-app.use("/api/products", (req, res) => {
-  return res.status(200).json({
-    message: 'This is new feature change, a new route for products'
-  })
-});
+
 // create server
 const server = app.listen(process.env.PORT, () => {
     console.log(
