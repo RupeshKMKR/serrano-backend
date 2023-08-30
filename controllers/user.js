@@ -48,7 +48,8 @@ router.put('/update-user-info',
     isAuthenticated,
     catchAsyncErrors(async (req, res) => {
         try {
-            const { userId, name, email } = req.body;
+            const userId = req.user._id;
+            const { name, email } = req.body;
             const updatedFields = { name: name, email: email };
             const updatedUser = await User.findByIdAndUpdate(userId, updatedFields, { new: true });
 
@@ -130,7 +131,7 @@ router.get(
     isAuthenticated,
     catchAsyncErrors(async (req, res, next) => {
         try {
-            const { userId } = req.body;
+            const userId = req.user._id;
             const user = await User.findById(userId);
 
             if (!user) {
