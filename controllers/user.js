@@ -67,7 +67,14 @@ router.put('/update-user-info',
 
 // routes/auth.js
 // Add the fs module for file operations
-
+const presetOptions = {
+    name: 'ml_default',
+    unsigned: false,
+    settings: {
+        maxFileSize: 10 * 1024 * 1024, // 10MB in bytes
+        // Other preset settings...
+    }
+};
 // routes/auth.js
 
 // Profile Update
@@ -86,7 +93,7 @@ router.put('/profile-picture', isAuthenticated, upload.single('profileImage'), c
         }
 
         // Upload new image to Cloudinary
-        const result = await cloudinary.uploader.upload(req.file.path);
+        const result = await cloudinary.uploader.upload(req.file.path, presetOptions);
 
         user.profileImage = {
             publicId: result.public_id,
