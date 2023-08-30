@@ -73,8 +73,7 @@ router.put('/update-user-info',
 // Profile Update
 router.put('/profile-picture', isAuthenticated, upload.single('profileImage'), catchAsyncErrors(async (req, res, next) => {
     try {
-        const { userId } = req.body;
-
+        const userId = req.user._id;
         let user = await User.findById(userId);
         console.log("user", user);
         if (!user) {
