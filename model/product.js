@@ -55,14 +55,18 @@ const productSchema = new mongoose.Schema({
     ratings: {
         type: Number,
     },
-    shopId: {
-        type: String,
-        required: true,
-    },
-    shop: {
-        type: Object,
-        required: true,
-    },
+    shops: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Shop',
+    }],
+    // shopId: {
+    //     type: String,
+    //     required: true,
+    // },
+    // shop: {
+    //     type: Object,
+    //     required: true,
+    // },
     sold_out: {
         type: Number,
         default: 0,
