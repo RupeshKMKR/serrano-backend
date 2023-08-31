@@ -125,9 +125,15 @@ router.get(
         try {
             const products = await Product.find().sort({ createdAt: -1 });
 
-            res.status(201).json({
+            // Fetch details of shops associated with each product
+            const productsWithShopDetails = await Promise.all(products.map(async (product) => {
+                const shopDetails = await Shop.find({ _id: { $in: product.shops } });
+                return { ...product.toObject(), shopDetails };
+            }));
+
+            res.status(200).json({
                 success: true,
-                products,
+                products: productsWithShopDetails,
             });
         } catch (error) {
             return next(new ErrorHandler(error, 400));
