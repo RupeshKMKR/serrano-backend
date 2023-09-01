@@ -211,14 +211,19 @@ router.put(
         try {
             const existsUser = await Shop.findById(req.seller._id);
 
-            const existAvatarPath = `uploads/${existsUser.avatar}`;
+            // Delete the existing avatar on Cloudinary
+            if (existsUser.avatar) {
+                const publicId = existsUser.avatar.split('/').slice(-1)[0].split('.')[0];
+                await cloudinary.uploader.destroy(publicId);
+            }
 
-            fs.unlinkSync(existAvatarPath);
+            // Upload the new avatar image to Cloudinary
+            const result = await cloudinary.uploader.upload(req.file.path);
+            console.log("req.seller._id", result.secure_url);
 
-            const fileUrl = path.join(req.file.filename);
-
+            // Update the shop's avatar with the Cloudinary URL
             const seller = await Shop.findByIdAndUpdate(req.seller._id, {
-                avatar: fileUrl,
+                avatar: result.secure_url,
             });
 
             res.status(200).json({
