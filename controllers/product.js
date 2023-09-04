@@ -11,6 +11,60 @@ const ErrorHandler = require("../utils/ErrorHandler");
 const fs = require("fs");
 
 // create product
+// router.post(
+//     "/create-product",
+//     upload.array("images"),
+//     catchAsyncErrors(async (req, res, next) => {
+//         try {
+//             const shopId = req.body.shopId;
+//             const shop = await Shop.findById(shopId);
+
+//             if (!shop) {
+//                 return next(new ErrorHandler("Shop Id is invalid!", 400));
+//             } else {
+//                 const productName = req.body.name; // Assuming the product name is sent in the request body
+
+//                 // Check if a product with the same name already exists
+//                 const existingProduct = await Product.findOne({ name: productName });
+
+//                 if (existingProduct) {
+//                     // If the product exists, update its shop ID with the new shop ID
+//                     if (!existingProduct.shops.includes(shopId)) {
+//                         existingProduct.shops.push(shopId);
+//                         await existingProduct.save();
+//                     }
+
+//                     res.status(200).json({
+//                         success: true,
+//                         product: existingProduct,
+//                     });
+//                 } else {
+//                     // Upload images directly to Cloudinary
+//                     const files = req.files;
+//                     const imageUrls = await Promise.all(files.map(async (file) => {
+//                         const result = await cloudinary.uploader.upload(file.path);
+//                         return result.secure_url;
+//                     }));
+
+//                     const productData = req.body;
+//                     productData.images = imageUrls;
+//                     productData.shops = [shopId]; // Initialize the shops array with the current shop ID
+
+//                     const product = await Product.create(productData);
+
+//                     res.status(201).json({
+//                         success: true,
+//                         product,
+//                     });
+//                 }
+//             }
+//         } catch (error) {
+//             return next(new ErrorHandler(error, 400));
+//         }
+//     })
+// );
+
+
 router.post(
     "/create-product",
     upload.array("images"),
@@ -28,16 +82,20 @@ router.post(
                 const existingProduct = await Product.findOne({ name: productName });
 
                 if (existingProduct) {
-                    // If the product exists, update its shop ID with the new shop ID
-                    if (!existingProduct.shops.includes(shopId)) {
+                    // Check if the existing product belongs to the same shop
+                    if (existingProduct.shops.includes(shopId)) {
+                        // Product with the same name already exists in the same shop
+                        return next(new ErrorHandler("Product with the same name already exists in this shop!", 400));
+                    } else {
+                        // If the product exists but not in the same shop, update its shop ID
                         existingProduct.shops.push(shopId);
                         await existingProduct.save();
-                    }
 
-                    res.status(200).json({
-                        success: true,
-                        product: existingProduct,
-                    });
+                        res.status(200).json({
+                            success: true,
+                            product: existingProduct,
+                        });
+                    }
                 } else {
                     // Upload images directly to Cloudinary
                     const files = req.files;
@@ -63,6 +121,7 @@ router.post(
         }
     })
 );
+
 
 // get all products of a shop
 router.get(
