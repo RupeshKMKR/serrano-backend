@@ -32,6 +32,7 @@ if (process.env.NODE_ENV !== "PRODUCTION") {
 const user = require("./controllers/user");
 const shop = require("./controllers/shop");
 const product = require("./controllers/product");
+const payment = require("./controllers/payment");
 const order = require("./controllers/order");
 
 app.use("/api/products", (req, res) => {
@@ -42,6 +43,7 @@ app.use("/api/products", (req, res) => {
 app.use("/api/v2/user", user);
 app.use("/api/v2/order", order);
 app.use("/api/v2/shop", shop);
+app.use("/api/v2/payment", payment);
 app.use("/api/v2/product", product);
 
 // it's for ErrorHandling
