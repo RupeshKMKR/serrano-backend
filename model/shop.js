@@ -36,9 +36,26 @@ const shopSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    aadharCard: {
+        type: String,
+        required: true,
+    },
+    panCard: {
+        type: String,
+        required: true,
+    },
+    shopLicense: {
+        type: String,
+        required: true,
+    },
     zipCode: {
         type: Number,
         required: true,
+    },
+    status: {
+        type: String,
+        enum: ["pending", "approved"],
+        default: "pending", // Default status is "pending"
     },
     withdrawMethod: {
         type: Object,

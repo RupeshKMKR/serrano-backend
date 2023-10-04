@@ -14,57 +14,84 @@ const ErrorHandler = require("../utils/ErrorHandler");
 const sendShopToken = require("../utils/shopToken");
 
 // create shop
-router.post("/create-shop", upload.single("file"), async (req, res, next) => {
-    console.log("email", req.body);
-    try {
-        const { email } = req.body;
-        const sellerEmail = await Shop.findOne({ email });
-        if (sellerEmail) {
-            const filename = req.file.filename;
-            const filePath = `uploads/${filename}`;
-            fs.unlink(filePath, (err) => {
-                if (err) {
-                    console.log(err);
-                    res.status(500).json({ message: "Error deleting file" });
-                }
-            });
-            return next(new ErrorHandler("User already exists", 400));
-        }
-
-        const filename = req.file.filename;
-        const fileUrl = path.join(filename);
-
-        const seller = {
-            name: req.body.name,
-            email: email,
-            password: req.body.password,
-            avatar: fileUrl,
-            address: req.body.address,
-            phoneNumber: req.body.phoneNumber,
-            zipCode: req.body.zipCode,
-        };
-
-        const activationToken = createActivationToken(seller);
-        console.log("activationToken", activationToken);
-        const activationUrl = `http://localhost:3000/seller/activation/${activationToken}`;
-
+router.post(
+    "/create-shop",
+    upload.fields([
+        { name: 'avatar', maxCount: 1 },
+        { name: 'aadharCard', maxCount: 1 },
+        { name: 'panCard', maxCount: 1 },
+        { name: 'shopLicense', maxCount: 1 }
+    ]),
+    async (req, res, next) => {
+        console.log("email", req.body);
         try {
-            await sendMail({
-                email: seller.email,
-                subject: "Activate your Shop",
-                message: `Hello ${seller.name}, please click on the link to activate your shop: ${activationUrl}`,
-            });
-            res.status(201).json({
-                success: true,
-                message: `please check your email:- ${seller.email} to activate your shop!`,
-            });
+            const { email } = req.body;
+            const sellerEmail = await Shop.findOne({ email });
+            if (sellerEmail) {
+                // Delete uploaded files
+                const filesToDelete = [
+                    req.files['avatar'][0].path,
+                    req.files['aadharCard'][0].path,
+                    req.files['panCard'][0].path,
+                    req.files['shopLicense'][0].path
+                ];
+                filesToDelete.forEach(filePath => {
+                    fs.unlink(filePath, (err) => {
+                        if (err) {
+                            console.log(err);
+                        }
+                    });
+                });
+
+                return next(new ErrorHandler("User already exists", 400));
+            }
+
+            // Upload images to Cloudinary
+            const avatarUpload = await cloudinary.uploader.upload(req.files['avatar'][0].path);
+            const aadharCardUpload = await cloudinary.uploader.upload(req.files['aadharCard'][0].path);
+            const panCardUpload = await cloudinary.uploader.upload(req.files['panCard'][0].path);
+            const shopLicenseUpload = await cloudinary.uploader.upload(req.files['shopLicense'][0].path);
+
+            // Construct the seller object with Cloudinary URLs
+            console.log("aadharCardUpload.secure_url", aadharCardUpload.secure_url);
+
+            const seller = {
+                name: req.body.name,
+                email: email,
+                password: req.body.password,
+                avatar: avatarUpload.secure_url,
+                aadharCard: aadharCardUpload.secure_url,
+                panCard: panCardUpload.secure_url,
+                shopLicense: shopLicenseUpload.secure_url,
+                address: req.body.address,
+                phoneNumber: req.body.phoneNumber,
+                zipCode: req.body.zipCode,
+                status: "pending",
+            };
+
+            const activationToken = createActivationToken(seller);
+            console.log("activationToken", activationToken);
+            const activationUrl = `http://localhost:3000/seller/activation/${activationToken}`;
+
+            try {
+                await sendMail({
+                    email: seller.email,
+                    subject: "Activate your Shop",
+                    message: `Hello ${seller.name}, please click on the link to activate your shop: ${activationUrl}`,
+                });
+                res.status(201).json({
+                    success: true,
+                    message: `please check your email:- ${seller.email} to activate your shop!`,
+                });
+            } catch (error) {
+                return next(new ErrorHandler(error.message, 500));
+            }
         } catch (error) {
-            return next(new ErrorHandler(error.message, 500));
+            return next(new ErrorHandler(error.message, 400));
         }
-    } catch (error) {
-        return next(new ErrorHandler(error.message, 400));
     }
-});
+);
+
 
 // create activation token
 const createActivationToken = (seller) => {
@@ -88,7 +115,7 @@ router.post(
             if (!newSeller) {
                 return next(new ErrorHandler("Invalid token", 400));
             }
-            const { name, email, password, avatar, zipCode, address, phoneNumber } =
+            const { name, email, password, avatar, zipCode, address, phoneNumber, aadharCard, panCard, shopLicense } =
                 newSeller;
 
             let seller = await Shop.findOne({ email });
@@ -105,6 +132,10 @@ router.post(
                 zipCode,
                 address,
                 phoneNumber,
+                aadharCard,
+                panCard,
+                shopLicense,
+                status: "approved",
             });
 
             sendShopToken(seller, 201, res);
@@ -114,6 +145,10 @@ router.post(
     })
 );
 
+
+
+
+
 // login shop
 router.post(
     "/login-shop",
@@ -121,25 +156,26 @@ router.post(
         try {
             const { email, password } = req.body;
 
-            if (!email || !password) {
-                return next(new ErrorHandler("Please provide the all fields!", 400));
-            }
-
             const user = await Shop.findOne({ email }).select("+password");
 
             if (!user) {
-                return next(new ErrorHandler("User doesn't exists!", 400));
+                return next(new ErrorHandler("User doesn't exist!", 400));
+            }
+
+            if (user.status !== "approved") {
+                return next(new ErrorHandler("Your account is not yet approved.", 401));
             }
 
             const isPasswordValid = await user.comparePassword(password);
 
             if (!isPasswordValid) {
                 return next(
-                    new ErrorHandler("Please provide the correct information", 400)
+                    new ErrorHandler("Please provide the correct information.", 400)
                 );
             }
 
             sendShopToken(user, 201, res);
+
         } catch (error) {
             return next(new ErrorHandler(error.message, 500));
         }
