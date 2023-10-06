@@ -49,7 +49,7 @@ router.post("/create-admin", upload.single("avatar"), catchAsyncErrors(async (re
         await admin.save();
 
         // Delete the file from the local upload folder
-        fs.unlinkSync(req.file.path);
+        // fs.unlinkSync(req.file.path);
 
         // Return a response indicating success
         res.status(201).json({
