@@ -14,6 +14,7 @@ const sendShopToken = (user, statusCode, res) => {
         success: true,
         user,
         token,
+        message: "Seller Login Successfully",
     });
 };
 

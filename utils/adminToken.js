@@ -14,6 +14,7 @@ const sendAdminToken = (user, statusCode, res) => {
         success: true,
         user,
         token,
+        message: "Admin Login Successfully",
     });
 };
 

@@ -12,6 +12,8 @@ const { upload } = require("../multere");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
 const ErrorHandler = require("../utils/ErrorHandler");
 const sendAdminToken = require("../utils/adminToken");
+const bcrypt = require("bcryptjs");
+
 
 
 router.post("/create-admin", upload.single("avatar"), catchAsyncErrors(async (req, res, next) => {
@@ -107,6 +109,207 @@ router.get(
         }
     })
 );
+
+
+// update shop profile picture
+router.put(
+    "/update-admin-avatar",
+    isAdmin,
+    upload.single("avatar"),
+    catchAsyncErrors(async (req, res, next) => {
+        try {
+            // Find the admin by ID
+            const admin = await Admin.findById(req.admin._id);
+
+            if (!admin) {
+                return next(new ErrorHandler("Admin not found", 404));
+            }
+
+            // Delete the existing avatar on Cloudinary
+            if (admin.avatar) {
+                const publicId = admin.avatar.split('/').slice(-1)[0].split('.')[0];
+                await cloudinary.uploader.destroy(publicId);
+            }
+
+            // Upload the new avatar image to Cloudinary
+            const result = await cloudinary.uploader.upload(req.file.path);
+
+            // Update the admin's avatar with the Cloudinary URL
+            admin.avatar = result.secure_url;
+            await admin.save();
+
+            // Delete the temporary file from the local upload folder
+            fs.unlinkSync(req.file.path);
+
+            res.status(200).json({
+                success: true,
+                admin,
+            });
+        } catch (error) {
+            return next(new ErrorHandler(error.message, 500));
+        }
+    })
+);
+
+// Update specific fields in the admin's profile (name, email, phoneNumber)
+router.put(
+    "/update-admin-profile",
+    isAdmin,
+    catchAsyncErrors(async (req, res, next) => {
+        try {
+            // Find the admin by ID
+            const admin = await Admin.findById(req.admin._id);
+
+            if (!admin) {
+                return next(new ErrorHandler("Admin not found", 404));
+            }
+
+            // Update specific fields from the request body (name, email, phoneNumber)
+            if (req.body.name) {
+                admin.name = req.body.name;
+            }
+            if (req.body.email) {
+                admin.email = req.body.email;
+            }
+            if (req.body.phoneNumber) {
+                admin.phoneNumber = req.body.phoneNumber;
+            }
+
+            // Save the updated admin profile
+            await admin.save();
+
+            // Return a response indicating success
+            res.status(200).json({
+                success: true,
+                admin,
+            });
+        } catch (error) {
+            return next(new ErrorHandler(error.message, 500));
+        }
+    })
+);
+
+
+router.put(
+    "/change-password",
+    isAdmin,
+    catchAsyncErrors(async (req, res, next) => {
+        try {
+            const admin = await Admin.findById(req.admin.id).select("+password");
+            const isPasswordMatched = await admin.comparePassword(
+                req.body.oldPassword
+            );
+
+            if (!isPasswordMatched) {
+                return next(new ErrorHandler("Old password is incorrect!", 400));
+            }
+
+            if (req.body.newPassword !== req.body.confirmPassword) {
+                return next(
+                    new ErrorHandler("Password doesn't matched with each other!", 400)
+                );
+            }
+            admin.password = req.body.newPassword;
+
+            await admin.save();
+
+            res.status(200).json({
+                success: true,
+                message: "Password updated successfully!",
+            });
+        } catch (error) {
+            return next(new ErrorHandler(error.message, 500));
+        }
+    })
+);
+
+// Generate a reset token and send a reset email
+router.post("/forgot-password", async (req, res, next) => {
+    try {
+        const email = req.body.email;
+
+        // Find the admin with the provided email
+        const admin = await Admin.findOne({ email });
+
+        if (!admin) {
+            throw new ErrorHandler("Admin not found", 404);
+        }
+
+        // Generate a reset token with an expiration time (e.g., 5 minutes)
+        const activationToken = createActivationToken(admin);
+        console.log("activationToken", activationToken);
+        const resetLink = `http://localhost:3000/reset-password?token=${activationToken}`;
+
+        try {
+            await sendMail({
+                email: email,
+                subject: "Password Reset",
+                message: `Click the following link to reset your password: ${resetLink}`,
+            });
+            res.status(201).json({
+                success: true,
+                message: `Please check your email (${email}) to reset your password.`,
+            });
+        } catch (error) {
+            return next(new ErrorHandler(error.message, 500));
+        }
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Create activation token
+const createActivationToken = (admin) => {
+    // Convert the admin object to a plain JavaScript object
+    const adminObject = admin.toObject();
+
+    return jwt.sign(adminObject, process.env.ACTIVATION_SECRET, {
+        expiresIn: "5m",
+    });
+};
+
+// Reset password route
+router.post("/reset-password", async (req, res, next) => {
+    try {
+        const { token, newPassword, confirmPassword } = req.body;
+
+        // Check if both newPassword and confirmPassword match
+        if (newPassword !== confirmPassword) {
+            throw new ErrorHandler("Passwords do not match", 400);
+        }
+
+        // Verify the reset token
+        const decodedToken = jwt.verify(token, process.env.ACTIVATION_SECRET);
+
+        if (!decodedToken) {
+            throw new ErrorHandler("Invalid or expired token", 400);
+        }
+
+        // Find the admin using the reset token (admin ID)
+        const admin = await Admin.findById(decodedToken._id);
+
+        if (!admin) {
+            throw new ErrorHandler("Admin not found", 404);
+        }
+
+        // Update the admin's password
+        admin.password = newPassword;
+
+        // Clear the reset token and reset password time
+        admin.resetPasswordToken = undefined;
+        admin.resetPasswordTime = undefined;
+
+        // Save the updated admin object
+        await admin.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Password reset successfully",
+        });
+    } catch (error) {
+        next(error);
+    }
+});
 
 module.exports = router;
 
