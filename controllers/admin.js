@@ -7,6 +7,7 @@ const cloudinary = require('../utils/cloudinaryConfig');
 const sendMail = require("../utils/sendMail");
 const sendToken = require("../utils/jwtToken");
 const Admin = require("../model/admin");
+const Product = require("../model/product");
 const { isAuthenticated, isSeller, isAdmin } = require("../middleware/auth");
 const { upload } = require("../multere");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
@@ -310,6 +311,83 @@ router.post("/reset-password", async (req, res, next) => {
         next(error);
     }
 });
+
+
+router.post(
+    '/create-product',
+    isAdmin,
+    upload.array('images', 5),
+    catchAsyncErrors(async (req, res, next) => { // Use catchAsyncErrors here
+        try {
+            // Extract product data from the request body
+            const { name, description, category, originalPrice, discountPrice, stock } = req.body;
+
+            // Extract image URLs from the uploaded files
+            const imageUrls = [];
+            for (const image of req.files) {
+                // Upload each image to Cloudinary and store the secure URL
+                const result = await cloudinary.uploader.upload(image.path);
+                imageUrls.push(result.secure_url);
+
+                // Delete the uploaded file from the local upload folder
+                fs.unlinkSync(image.path);
+            }
+
+            // Create a new product instance with image URLs
+            const newProduct = new Product({
+                name,
+                description,
+                category,
+                originalPrice,
+                discountPrice,
+                stock,
+                images: imageUrls,
+                // Other relevant fields
+            });
+
+            // Save the new product to the database
+            const savedProduct = await newProduct.save();
+
+            // Return a success response with the created product
+            res.status(201).json({
+                success: true,
+                message: 'Product created successfully',
+                product: savedProduct,
+            });
+        } catch (error) {
+            // Handle errors using the custom error handler
+            console.error(error);
+
+            // Delete uploaded files from the local upload folder on error
+            for (const image of req.files) {
+                fs.unlinkSync(image.path);
+            }
+
+            // Use the custom ErrorHandler to handle the error
+            return next(new ErrorHandler(error.message, 500));
+        }
+    })
+);
+
+
+// all products --- for admin
+router.get(
+    "/admin-all-products",
+    isAdmin,
+    catchAsyncErrors(async (req, res, next) => {
+        try {
+            const products = await Product.find().sort({
+                createdAt: -1,
+            });
+            res.status(201).json({
+                success: true,
+                products,
+            });
+        } catch (error) {
+            return next(new ErrorHandler(error.message, 500));
+        }
+    })
+);
 
 module.exports = router;
 
