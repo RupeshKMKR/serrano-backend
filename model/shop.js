@@ -111,4 +111,4 @@ shopSchema.methods.comparePassword = async function (enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
 };
 
-module.exports = mongoose.model("Shop", shopSchema);
+module.exports = mongoose.model("Shop", shopSchema)

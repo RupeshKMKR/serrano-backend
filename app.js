@@ -6,10 +6,11 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const path = require("path");
 
-app.use(cors({
-  origin: 'http://localhost:3000',
-  credentials: true
-}));
+// app.use(cors({
+//   origin: 'http://localhost:3000',
+//   credentials: true
+// }));
+app.use(cors());
 
 
 

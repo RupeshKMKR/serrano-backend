@@ -389,6 +389,75 @@ router.get(
     })
 );
 
+
+
+// Route to update a product by ID
+router.put(
+    "/products/:productId",
+    isAdmin,
+    upload.array("images", 5), // Use upload.array for images
+    catchAsyncErrors(async (req, res, next) => {
+        try {
+            const productId = req.params.productId;
+            const updates = req.body;
+
+            // Check if images were uploaded
+            if (req.files && req.files.length > 0) {
+                // Upload new images and add their URLs to the updates object
+                const imageUrls = [];
+                for (const image of req.files) {
+                    const result = await cloudinary.uploader.upload(image.path);
+                    imageUrls.push(result.secure_url);
+
+                    // Delete the uploaded file from the local upload folder
+                    fs.unlinkSync(image.path);
+                }
+                updates.images = imageUrls;
+            }
+
+            const updatedProduct = await Product.findByIdAndUpdate(
+                productId,
+                updates,
+                { new: true }
+            );
+
+            if (!updatedProduct) {
+                throw new ErrorHandler("Product not found", 404);
+            }
+
+            res.status(200).json({ success: true, product: updatedProduct });
+        } catch (error) {
+            return next(new ErrorHandler(error.message, 500));
+        }
+    })
+);
+
+
+// Route to delete a product by ID
+router.delete(
+    '/products/:productId',
+    isAdmin,
+    async (req, res, next) => {
+        try {
+            const productId = req.params.productId;
+
+            // Check if the product exists
+            const product = await Product.findById(productId);
+
+            if (!product) {
+                throw new ErrorHandler('Product not found', 404);
+            }
+
+            // Perform the product deletion
+            await Product.findByIdAndRemove(productId);
+
+            res.status(200).json({ success: true, message: 'Product deleted successfully' });
+        } catch (error) {
+            return next(new ErrorHandler(error.message, 500));
+        }
+    }
+);
+
 module.exports = router;
 
 
