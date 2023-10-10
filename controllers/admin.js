@@ -113,6 +113,28 @@ router.get(
     })
 );
 
+// load shop
+router.get(
+    "/getAdmin",
+    isAdmin,
+    catchAsyncErrors(async (req, res, next) => {
+        try {
+            const admin = await Admin.findById(req.admin._id);
+
+            if (!admin) {
+                return next(new ErrorHandler("User doesn't exists", 400));
+            }
+
+            res.status(200).json({
+                success: true,
+                admin,
+                message: "get Admin",
+            });
+        } catch (error) {
+            return next(new ErrorHandler(error.message, 500));
+        }
+    })
+);
 
 // update shop profile picture
 router.put(
