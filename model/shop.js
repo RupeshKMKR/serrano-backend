@@ -38,15 +38,12 @@ const shopSchema = new mongoose.Schema({
     },
     aadharCard: {
         type: String,
-        required: true,
     },
     panCard: {
         type: String,
-        required: true,
     },
     shopLicense: {
         type: String,
-        required: true,
     },
     zipCode: {
         type: Number,
