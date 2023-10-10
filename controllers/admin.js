@@ -7,6 +7,8 @@ const cloudinary = require('../utils/cloudinaryConfig');
 const sendMail = require("../utils/sendMail");
 const sendToken = require("../utils/jwtToken");
 const Admin = require("../model/admin");
+const User = require("../model/user");
+const Shop = require("../model/shop");
 const Product = require("../model/product");
 const { isAuthenticated, isSeller, isAdmin } = require("../middleware/auth");
 const { upload } = require("../multere");
@@ -145,6 +147,7 @@ router.put(
             res.status(200).json({
                 success: true,
                 admin,
+                message: "profile image updated successfull",
             });
         } catch (error) {
             return next(new ErrorHandler(error.message, 500));
@@ -183,6 +186,7 @@ router.put(
             res.status(200).json({
                 success: true,
                 admin,
+                message: "profile info updated successfull",
             });
         } catch (error) {
             return next(new ErrorHandler(error.message, 500));
@@ -437,25 +441,115 @@ router.put(
 router.delete(
     '/products/:productId',
     isAdmin,
-    async (req, res, next) => {
-        try {
-            const productId = req.params.productId;
+    catchAsyncErrors(
+        async (req, res, next) => {
+            try {
+                const productId = req.params.productId;
 
-            // Check if the product exists
-            const product = await Product.findById(productId);
+                // Check if the product exists
+                const product = await Product.findById(productId);
 
-            if (!product) {
-                throw new ErrorHandler('Product not found', 404);
+                if (!product) {
+                    throw new ErrorHandler('Product not found', 404);
+                }
+
+                // Perform the product deletion
+                await Product.findByIdAndRemove(productId);
+
+                res.status(200).json({ success: true, message: 'Product deleted successfully' });
+            } catch (error) {
+                return next(new ErrorHandler(error.message, 500));
             }
+        }
+    )
+);
 
-            // Perform the product deletion
-            await Product.findByIdAndRemove(productId);
+// Route to get all users
+router.get(
+    '/get-users',
+    isAdmin,
+    catchAsyncErrors(async (req, res, next) => {
+        try {
+            const users = await User.find();
+            res.status(200).json({ success: true, users });
+        } catch (error) {
+            // Use the custom ErrorHandler to handle the error
+            next(new ErrorHandler('Error fetching users', 500));
+        }
+    })
+);
 
-            res.status(200).json({ success: true, message: 'Product deleted successfully' });
+router.get(
+    '/get-seller',
+    isAdmin,
+    catchAsyncErrors(async (req, res, next) => {
+        try {
+            const shops = await Shop.find();
+            res.status(200).json({ success: true, shops });
+        } catch (error) {
+            // Use the custom ErrorHandler to handle the error
+            next(new ErrorHandler('Error fetching users', 500));
+        }
+    })
+);
+
+// update seller info
+router.put(
+    "/update-seller-info/:shopId",
+    isAdmin,
+    catchAsyncErrors(async (req, res, next) => {
+        try {
+            const { name, email, address, phoneNumber, zipCode, status } = req.body;
+            const shopId = req.params.shopId;
+            const shop = await Shop.findById(shopId);
+            if (!shop) {
+                return next(new ErrorHandler("User not found", 400));
+            }
+            shop.name = name;
+            shop.email = email;
+            shop.address = address;
+            shop.phoneNumber = phoneNumber;
+            shop.zipCode = zipCode;
+            shop.status = status;
+
+
+            await shop.save();
+
+            res.status(201).json({
+                success: true,
+                shop,
+            });
         } catch (error) {
             return next(new ErrorHandler(error.message, 500));
         }
-    }
+    })
+);
+
+// Route to delete a product by ID
+router.delete(
+    '/seller/:shopId',
+    isAdmin,
+    catchAsyncErrors(
+        async (req, res, next) => {
+            try {
+                const shopId = req.params.shopId;
+
+                // Check if the product exists
+                const shop = await Shop.findById(shopId);
+
+                if (!shop) {
+                    throw new ErrorHandler('Shop not found', 404);
+                }
+
+                // Perform the product deletion
+                await Shop.findByIdAndRemove(shopId);
+
+                res.status(200).json({ success: true, message: 'Shop deleted successfully' });
+            } catch (error) {
+                return next(new ErrorHandler(error.message, 500));
+            }
+        }
+    )
 );
 
 module.exports = router;
