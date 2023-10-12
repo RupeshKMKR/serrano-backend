@@ -7,6 +7,7 @@ const cloudinary = require('../utils/cloudinaryConfig');
 const sendMail = require("../utils/sendMail");
 const sendToken = require("../utils/jwtToken");
 const Shop = require("../model/shop");
+const Product = require("../model/product");
 const { isAuthenticated, isSeller, isAdmin } = require("../middleware/auth");
 const { upload } = require("../multere");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
@@ -144,9 +145,6 @@ router.post(
         }
     })
 );
-
-
-
 
 
 // login shop
@@ -298,6 +296,24 @@ router.put(
             res.status(201).json({
                 success: true,
                 shop,
+            });
+        } catch (error) {
+            return next(new ErrorHandler(error.message, 500));
+        }
+    })
+);
+
+router.get(
+    "/admin-all-products",
+    isSeller,
+    catchAsyncErrors(async (req, res, next) => {
+        try {
+            const products = await Product.find().sort({
+                createdAt: -1,
+            });
+            res.status(201).json({
+                success: true,
+                products,
             });
         } catch (error) {
             return next(new ErrorHandler(error.message, 500));

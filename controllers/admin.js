@@ -540,6 +540,7 @@ router.put(
             res.status(201).json({
                 success: true,
                 shop,
+                message: 'Shop updated successfully',
             });
         } catch (error) {
             return next(new ErrorHandler(error.message, 500));
