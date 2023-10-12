@@ -451,7 +451,7 @@ router.put(
                 throw new ErrorHandler("Product not found", 404);
             }
 
-            res.status(200).json({ success: true, product: updatedProduct });
+            res.status(200).json({ success: true, product: updatedProduct, message: 'Product updated successfully', });
         } catch (error) {
             return next(new ErrorHandler(error.message, 500));
         }
