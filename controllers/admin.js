@@ -9,6 +9,7 @@ const sendToken = require("../utils/jwtToken");
 const Admin = require("../model/admin");
 const User = require("../model/user");
 const Shop = require("../model/shop");
+const Order = require("../model/order");
 const Product = require("../model/product");
 const { isAuthenticated, isSeller, isAdmin } = require("../middleware/auth");
 const { upload } = require("../multere");
@@ -573,6 +574,23 @@ router.delete(
             }
         }
     )
+);
+
+router.get(
+    '/orders',
+    isAdmin, // Use the isSeller middleware here
+    catchAsyncErrors(async (req, res, next) => {
+        try {
+            const orders = await Order.find();
+            if (!orders || orders.length === 0) {
+                return res.status(404).json({ success: false, message: 'No orders found for the specified shop' });
+            }
+
+            res.status(200).json({ success: true, orders });
+        } catch (error) {
+            next(new ErrorHandler('Error fetching orders', 500));
+        }
+    })
 );
 
 module.exports = router;
