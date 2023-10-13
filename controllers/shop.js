@@ -1,4 +1,5 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const path = require("path");
 const router = express.Router();
 const fs = require("fs");
@@ -7,6 +8,7 @@ const cloudinary = require('../utils/cloudinaryConfig');
 const sendMail = require("../utils/sendMail");
 const sendToken = require("../utils/jwtToken");
 const Shop = require("../model/shop");
+const Order = require("../model/order");
 const Product = require("../model/product");
 const { isAuthenticated, isSeller, isAdmin } = require("../middleware/auth");
 const { upload } = require("../multere");
@@ -264,6 +266,7 @@ router.put(
             res.status(200).json({
                 success: true,
                 seller,
+                message: "Shop Image Update Successfull",
             });
         } catch (error) {
             return next(new ErrorHandler(error.message, 500));
@@ -296,6 +299,7 @@ router.put(
             res.status(201).json({
                 success: true,
                 shop,
+                message: "seller update successfull",
             });
         } catch (error) {
             return next(new ErrorHandler(error.message, 500));
@@ -412,6 +416,24 @@ router.delete(
             });
         } catch (error) {
             return next(new ErrorHandler(error.message, 500));
+        }
+    })
+);
+
+router.get(
+    '/orders',
+    isSeller, // Use the isSeller middleware here
+    catchAsyncErrors(async (req, res, next) => {
+        const shopId = req.seller._id.toString();
+        try {
+            const orders = await Order.find({ "cart.shop.id": shopId });
+            if (!orders || orders.length === 0) {
+                return res.status(404).json({ success: false, message: 'No orders found for the specified shop' });
+            }
+
+            res.status(200).json({ success: true, orders });
+        } catch (error) {
+            next(new ErrorHandler('Error fetching orders', 500));
         }
     })
 );
