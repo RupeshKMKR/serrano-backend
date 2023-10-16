@@ -472,4 +472,92 @@ router.put(
     })
 );
 
+// Generate a reset token and send a reset email
+router.post("/forgot-password", async (req, res, next) => {
+    try {
+        const email = req.body.email;
+
+        // Find the admin with the provided email
+        const shop = await Shop.findOne({ email });
+
+        if (!shop) {
+            throw new ErrorHandler("Seller not found", 404);
+        }
+
+        // Generate a reset token with an expiration time (e.g., 5 minutes)
+        const activationTokenpass = createActivationTokenshop(shop);
+        console.log("activationToken", activationTokenpass);
+        const resetLink = `http://localhost:3000/reset-password/${activationTokenpass}`;
+
+        try {
+            await sendMail({
+                email: email,
+                subject: "Password Reset",
+                message: `Click the following link to reset your password: ${resetLink}`,
+            });
+            res.status(201).json({
+                success: true,
+                message: `Please check your email (${email}) to reset your password.`,
+            });
+        } catch (error) {
+            return next(new ErrorHandler(error.message, 500));
+        }
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Create activation token
+const createActivationTokenshop = (admin) => {
+    // Convert the admin object to a plain JavaScript object
+    const adminObject = admin.toObject();
+
+    return jwt.sign(adminObject, process.env.ACTIVATION_SECRET, {
+        expiresIn: "5m",
+    });
+};
+
+// Reset password route
+router.post("/reset-password", async (req, res, next) => {
+    try {
+        const { token, newPassword, confirmPassword } = req.body;
+
+        // Check if both newPassword and confirmPassword match
+        if (newPassword !== confirmPassword) {
+            throw new ErrorHandler("Passwords do not match", 400);
+        }
+
+        // Verify the reset token
+        const decodedToken = jwt.verify(token, process.env.ACTIVATION_SECRET);
+
+        if (!decodedToken) {
+            throw new ErrorHandler("Invalid or expired token", 400);
+        }
+
+        // Find the admin using the reset token (admin ID)
+        const shop = await Shop.findById(decodedToken._id);
+
+        if (!shop) {
+            throw new ErrorHandler("Admin not found", 404);
+        }
+
+        // Update the admin's password
+        shop.password = newPassword;
+
+        // Clear the reset token and reset password time
+        shop.resetPasswordToken = undefined;
+        shop.resetPasswordTime = undefined;
+
+        // Save the updated admin object
+        await shop.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Password reset successfully",
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
 module.exports = router;
