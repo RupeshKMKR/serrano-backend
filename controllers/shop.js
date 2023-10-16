@@ -266,7 +266,7 @@ router.put(
             res.status(200).json({
                 success: true,
                 seller,
-                message: "Shop Image Update Successfull",
+                message: "Shop Image Update Successfully",
             });
         } catch (error) {
             return next(new ErrorHandler(error.message, 500));
@@ -299,7 +299,7 @@ router.put(
             res.status(201).json({
                 success: true,
                 shop,
-                message: "seller update successfull",
+                message: "seller update successfully",
             });
         } catch (error) {
             return next(new ErrorHandler(error.message, 500));
@@ -318,6 +318,7 @@ router.get(
             res.status(201).json({
                 success: true,
                 products,
+                message: "Get All Product successfully!",
             });
         } catch (error) {
             return next(new ErrorHandler(error.message, 500));
@@ -431,9 +432,42 @@ router.get(
                 return res.status(404).json({ success: false, message: 'No orders found for the specified shop' });
             }
 
-            res.status(200).json({ success: true, orders });
+            res.status(200).json({ success: true, orders, message: "Get orders", });
         } catch (error) {
             next(new ErrorHandler('Error fetching orders', 500));
+        }
+    })
+);
+
+router.put(
+    "/change-password",
+    isSeller,
+    catchAsyncErrors(async (req, res, next) => {
+        try {
+            const shop = await Shop.findById(req.seller.id).select("+password");
+            const isPasswordMatched = await shop.comparePassword(
+                req.body.oldPassword
+            );
+
+            if (!isPasswordMatched) {
+                return next(new ErrorHandler("Old password is incorrect!", 400));
+            }
+
+            if (req.body.newPassword !== req.body.confirmPassword) {
+                return next(
+                    new ErrorHandler("Password doesn't matched with each other!", 400)
+                );
+            }
+            shop.password = req.body.newPassword;
+
+            await shop.save();
+
+            res.status(200).json({
+                success: true,
+                message: "Password updated successfully!",
+            });
+        } catch (error) {
+            return next(new ErrorHandler(error.message, 500));
         }
     })
 );
