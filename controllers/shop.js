@@ -560,4 +560,34 @@ router.post("/reset-password", async (req, res, next) => {
     }
 });
 
+
+// Update pstock with stock and shop ID
+router.put('/products/:id/', isSeller, async (req, res) => {
+    try {
+        const productId = req.params.id;
+        const { stock } = req.body;
+        const shopId = req.seller.id;
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({ message: 'Product not found' });
+        }
+
+        let existingPstock = product.pstock.find((item) => String(item.shop) === String(shopId));
+
+        if (existingPstock) {
+            existingPstock.stock = Number(existingPstock.stock) + Number(stock);
+            product.stock = Number(product.stock) + Number(stock);
+        } else {
+            product.pstock.push({ shop: shopId, stock: Number(stock) });
+            product.stock = Number(product.stock) + Number(stock);
+        }
+
+        await product.save();
+
+        return res.json({ message: 'Pstock updated successfully', data: product });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Server Error' });
+    }
+});
 module.exports = router;
