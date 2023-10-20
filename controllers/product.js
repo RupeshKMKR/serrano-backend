@@ -186,7 +186,8 @@ router.get(
 
             // Fetch details of shops associated with each product
             const productsWithShopDetails = await Promise.all(products.map(async (product) => {
-                const shopDetails = await Shop.find({ _id: { $in: product.pstock.shop } });
+                const shopIds = product.pstock.map(item => item.shop);
+                const shopDetails = await Shop.find({ _id: { $in: shopIds } });
                 return { ...product.toObject(), shopDetails };
             }));
 
