@@ -590,4 +590,29 @@ router.put('/products/:id/', isSeller, async (req, res) => {
         return res.status(500).json({ message: 'Server Error' });
     }
 });
+
+// Get products by shop ID
+router.get(
+    '/perticular-shop-products',
+    isSeller,
+    catchAsyncErrors(async (req, res, next) => {
+        try {
+            const shopId = req.seller.id;
+
+            const products = await Product.find({ 'pstock.shop': shopId });
+
+            if (!products) {
+                return res.status(404).json({ message: 'Products not found for this shop' });
+            }
+
+            res.status(200).json({
+                success: true,
+                products: products,
+            });
+        } catch (error) {
+            return next(new ErrorHandler(error, 400));
+        }
+    })
+);
+
 module.exports = router;
