@@ -7,7 +7,7 @@ const cors = require("cors");
 const path = require("path");
 
 // Allow requests from specific origins
-const allowedOrigins = ["https://admin.serrano.in", "https://shop.serrano.in"];
+const allowedOrigins = ["https://admin.serrano.in", "https://shop.serrano.in", "http://localhost:3000"];
 
 app.use(function (req, res, next) {
   const origin = req.headers.origin;
