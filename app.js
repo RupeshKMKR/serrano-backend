@@ -7,8 +7,13 @@ const cors = require("cors");
 const path = require("path");
 
 // Allow requests from specific origins
+const allowedOrigins = ["https://admin.serrano.in", "https://shop.serrano.in"];
+
 app.use(function (req, res, next) {
-  res.header("Access-Control-Allow-Origin", "https://admin.serrano.in", "https://shop.serrano.in");
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header("Access-Control-Allow-Origin", origin);
+  }
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
   res.header("Access-Control-Allow-Credentials", "true"); // Set the header to true
   next();
