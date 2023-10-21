@@ -6,22 +6,22 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const path = require("path");
 
-// Allow requests from specific origins
-const allowedOrigins = ["https://admin.serrano.in", "https://shop.serrano.in", "http://localhost:3000"];
+// // Allow requests from specific origins
+// const allowedOrigins = ["https://admin.serrano.in", "https://shop.serrano.in", "http://localhost:3000"];
 
-app.use(function (req, res, next) {
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.header("Access-Control-Allow-Origin", origin);
-  }
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-  res.header("Access-Control-Allow-Credentials", "true"); // Set the header to true
-  next();
-});
-// app.use(cors({
-//   origin: ['https://admin.serrano.in/',],
-//   credentials: true
-// }));
+// app.use(function (req, res, next) {
+//   const origin = req.headers.origin;
+//   if (allowedOrigins.includes(origin)) {
+//     res.header("Access-Control-Allow-Origin", origin);
+//   }
+//   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+//   res.header("Access-Control-Allow-Credentials", "true"); // Set the header to true
+//   next();
+// });
+app.use(cors({
+  origin: ['http://localhost:3000/',],
+  credentials: true
+}));
 
 
 app.use(express.json());
