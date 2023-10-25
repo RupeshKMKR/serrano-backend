@@ -138,7 +138,7 @@ router.post(
                 aadharCard,
                 panCard,
                 shopLicense,
-                status: "approved",
+                status: "pending",
             });
 
             sendShopToken(seller, 201, res);
