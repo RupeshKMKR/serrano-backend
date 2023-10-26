@@ -16,7 +16,6 @@ const catchAsyncErrors = require("../middleware/catchAsyncErrors");
 const ErrorHandler = require("../utils/ErrorHandler");
 const sendShopToken = require("../utils/shopToken");
 
-// create shop
 router.post(
     "/create-shop",
     upload.fields([
@@ -43,6 +42,7 @@ router.post(
                         if (err) {
                             console.log(err);
                         }
+                        console.log(`Deleted ${filePath} successfully.`);
                     });
                 });
 
@@ -82,6 +82,23 @@ router.post(
                     subject: "Activate your Shop",
                     message: `Hello ${seller.name}, please click on the link to activate your shop: ${activationUrl}`,
                 });
+
+                // Delete uploaded files
+                const filesToDelete = [
+                    req.files['avatar'][0].path,
+                    req.files['aadharCard'][0].path,
+                    req.files['panCard'][0].path,
+                    req.files['shopLicense'][0].path
+                ];
+                filesToDelete.forEach(filePath => {
+                    fs.unlink(filePath, (err) => {
+                        if (err) {
+                            console.log(err);
+                        }
+                        console.log(`Deleted ${filePath} successfully.`);
+                    });
+                });
+
                 res.status(201).json({
                     success: true,
                     message: `please check your email:- ${seller.email} to activate your shop!`,
@@ -96,6 +113,7 @@ router.post(
 );
 
 
+
 // create activation token
 const createActivationToken = (seller) => {
     return jwt.sign(seller, process.env.ACTIVATION_SECRET, {
@@ -103,7 +121,6 @@ const createActivationToken = (seller) => {
     });
 };
 
-// activate user
 router.post(
     "/activation",
     catchAsyncErrors(async (req, res, next) => {
@@ -124,29 +141,31 @@ router.post(
             let seller = await Shop.findOne({ email });
 
             if (seller) {
-                return next(new ErrorHandler("User already exists", 400));
+                // Check if the user already exists
+                sendShopToken(seller, 200, res); // Assuming this function sends a token response
+            } else {
+                seller = await Shop.create({
+                    name,
+                    email,
+                    avatar,
+                    password,
+                    zipCode,
+                    address,
+                    phoneNumber,
+                    aadharCard,
+                    panCard,
+                    shopLicense,
+                    status: "pending",
+                });
+
+                sendShopToken(seller, 201, res); // Assuming this function sends a token response
             }
-
-            seller = await Shop.create({
-                name,
-                email,
-                avatar,
-                password,
-                zipCode,
-                address,
-                phoneNumber,
-                aadharCard,
-                panCard,
-                shopLicense,
-                status: "pending",
-            });
-
-            sendShopToken(seller, 201, res);
         } catch (error) {
             return next(new ErrorHandler(error.message, 500));
         }
     })
 );
+
 
 
 // login shop
