@@ -266,7 +266,7 @@ router.post("/forgot-password", async (req, res, next) => {
         // Generate a reset token with an expiration time (e.g., 5 minutes)
         const activationToken = createActivationToken(admin);
         console.log("activationToken", activationToken);
-        const resetLink = `http://localhost:3000/reset-password/${activationToken}`;
+        const resetLink = `https://admin.serrano.in/reset-password/${activationToken}`;
 
         try {
             await sendMail({

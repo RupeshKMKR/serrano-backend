@@ -74,7 +74,7 @@ router.post(
 
             const activationToken = createActivationToken(seller);
             console.log("activationToken", activationToken);
-            const activationUrl = `http://localhost:3000/seller/activation/${activationToken}`;
+            const activationUrl = `https://shop.serrano.in/seller/activation/${activationToken}`;
 
             try {
                 await sendMail({
@@ -506,7 +506,7 @@ router.post("/forgot-password", async (req, res, next) => {
         // Generate a reset token with an expiration time (e.g., 5 minutes)
         const activationTokenpass = createActivationTokenshop(shop);
         console.log("activationToken", activationTokenpass);
-        const resetLink = `http://localhost:3000/reset-password/${activationTokenpass}`;
+        const resetLink = `https://shop.serrano.in/reset-password/${activationTokenpass}`;
 
         try {
             await sendMail({
